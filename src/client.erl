@@ -43,7 +43,7 @@ init(_Args) ->
 
     % initialize periodic trigger
     Interval = random:uniform(?INTERVAL),
-    erlang:send_after(Interval, self(), trigger2),
+    erlang:send_after(Interval, self(), trigger),
 
     {ok, Socket}.
 
@@ -58,22 +58,14 @@ handle_info({tcp, _OtherSocket, _Msg}, Socket) ->
     ok = inet:setopts(Socket, [{active, once}]),
     {noreply, Socket};
 
-handle_info(trigger, Socket) ->
-    io:format("~w was triggered~n", [self()]),
-    %% io:format("Socket: ~w~n", [inet:sockname(Socket)]),
-    ok = gen_tcp:send(Socket, "Ping"),
-    %% io:format("SockStat: ~p~n", [inet:getstat(Socket)]),
-    erlang:send_after(?INTERVAL, self(), trigger),
-    {noreply, Socket};
-
 % receiving in passive mode with timeout
-handle_info(trigger2, Socket) ->
+handle_info(trigger, Socket) ->
     %% io:format("~w was triggered~n", [self()]),
     case gen_tcp:send(Socket, "Ping") of
         ok ->
             case gen_tcp:recv(Socket, 0, 1000) of
                 {ok, "Pong"} ->
-                    erlang:send_after(?INTERVAL, self(), trigger2),
+                    erlang:send_after(?INTERVAL, self(), trigger),
                     {noreply, Socket};
                 {error, timeout} ->
                     % timeout from gen_tcp:recv/3
