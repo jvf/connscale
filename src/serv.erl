@@ -41,11 +41,6 @@ handle_cast(accept, ListenSocket) ->
             {stop, {error, Reason}, ListenSocket}
     end.
 
-%% handle_info({tcp, _Socket, "quit"++_}, Socket) ->
-%%     io:format("received quit msg~n", []),
-%%     gen_tcp:close(Socket),
-%%     {stop, normal, Socket};
-
 handle_info({tcp, _Socket, "Ping"}, Socket) ->
     %% io:format("serv ~w received "Ping"~n", [self()]),
     ok = gen_tcp:send(Socket, "Pong"),
