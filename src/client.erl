@@ -5,8 +5,6 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3,
          terminate/2]).
 
--define(INTERVAL, 5000).
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Client application
@@ -39,10 +37,10 @@ init(_Args) ->
 
     {ok, Server} = application:get_env(client, server),
     {ok, Port} = application:get_env(client, listen_port),
+    {ok, Interval} = application:get_env(client, interval),
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
 
     % initialize periodic trigger
-    Interval = random:uniform(?INTERVAL),
     erlang:send_after(Interval, self(), trigger),
 
     {ok, Socket}.
@@ -61,11 +59,13 @@ handle_info({tcp, _OtherSocket, _Msg}, Socket) ->
 % receiving in passive mode with timeout
 handle_info(trigger, Socket) ->
     %% io:format("~w was triggered~n", [self()]),
+    {ok, Timeout} = application:get_env(client, timeout),
     case gen_tcp:send(Socket, "Ping") of
         ok ->
-            case gen_tcp:recv(Socket, 0, 1000) of
+            case gen_tcp:recv(Socket, 0, Timeout) of
                 {ok, "Pong"} ->
-                    erlang:send_after(?INTERVAL, self(), trigger),
+                    {ok, Interval} = application:get_env(client, interval),
+                    erlang:send_after(Interval, self(), trigger),
                     {noreply, Socket};
                 {error, timeout} ->
                     % timeout from gen_tcp:recv/3
