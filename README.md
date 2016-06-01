@@ -1,14 +1,14 @@
 # Connscale
 
-A little Erlang application to test what happens if we open *a lot* of TCP connections using `gen_tcp`. The app consists of a main (server) component (`connscale`, `serv` and `serv_sup`) and a client component (`client`, `client_sup`).
+A little Erlang application to test how well the number of TCP connections scales on a given hardware using `gen_tcp`. The app consists of a main (server) component (`connscale`, `serv` and `serv_sup`) and a client component (`client`, `client_sup`).
 
 ## Server
 
-The server component opens a listen socket and a number of concurrent acceptors, waiting for connection requests. If a clients connects, one of the acceptors takes over the connection, spawns a new acceptor and goes into `{active, once}` mode. Each acceptor/connection is managed by its own process, implemented as a `gen_server`. All the server processes are supervised by `serv_sup`. Each connections waits for "Ping" messages and responds with a "Pong".
+The server component opens a listen socket and a number of concurrent acceptors, waiting for connection requests. If a clients connects, one of the acceptors takes over the connection, spawns a new acceptor and goes into `{active, once}` mode. Each acceptor/connection is managed by its own process, implemented as a `gen_server`. All the server processes are supervised by `serv_sup`. Each connection waits for "Ping" messages and responds with a "Pong".
 
 ## Client
 
-The client component consists of a supervisor through which we start client connections. Each connection is managed by its own process, implemented as a `gen_serve`. Once a connection is started the process sends a "Ping" message every `INTERVAL` seconds and waiting for a "Pong" reply in passive mode. If no pong message is received with 1 second, the process is terminated with a `no_answer_from_server` error.
+The client component consists of a supervisor through which we start client connections. Each connection is managed by its own process, implemented as a `gen_server`. Once a connection is started the process sends a "Ping" message every `INTERVAL` seconds and waiting for a "Pong" reply in passive mode. If no pong message is received with 1 second, the process is terminated with a `no_answer_from_server` error.
 
 # How to use
 
@@ -24,7 +24,11 @@ Configuration parameters like the server IP address, the listening port, the cli
 
 ## Usage
 
-Compile the sources with `erl -make`. Start the server application with `erl -rsh ssh -name master -pa ebin -s connscale -config connscale.config` (assuming a configuration file `connscale.config`). This starts the server application, which starts the supervisor the configured number of acceptors.
+Compile the sources with `erl -make`. Start the server application with
+```
+erl -rsh ssh -name master -pa ebin -s connscale -config connscale.config
+```
+(assuming a configuration file `connscale.config`). This starts the server application, which starts the supervisor and the configured number of acceptors.
 From the console, start a client application on a remote node with
 ```
 Client1 = connscale:client_start(client1).
@@ -35,10 +39,7 @@ We can now start client connections with `connscale:connections_start(10, Client
 
 To stop connetions, use `connscale:connections_stop/2`, e.g. `connections_stop(5, Client1)`.
 
-# TODO
-- [ ] make `INTERVAL` configurable
-- [ ] make client timeout configurable
-- [ ] collect connection statistics
+
 
 # Findings
 
@@ -60,6 +61,11 @@ More sources on the topic:
 
 
 
-## How to fix it
+### How to fix it
 
 Add the option `{reuseaddr, true} ` when opening the listen socket. This only works if the listen socket is bound to the wildcard 0.0.0.0 IP (which is the default for gen_tcp).
+
+# TODO
+- [ ] make `INTERVAL` configurable
+- [ ] make client timeout configurable
+- [ ] collect connection statistics
