@@ -11,8 +11,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
+%% Adaptor to start the app with erl -run/-s
+start() ->
+    io:format("starting ~w application~n", [?MODULE]),
+    application:start(?MODULE).
+
+%% Start the client app
 start(normal, _Args) ->
     _ = ets:new(counters, [public, named_table]),
     true = ets:insert_new(counters, {restarts, 0}),
