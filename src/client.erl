@@ -46,6 +46,10 @@ handle_cast(connect, no_socket) ->
     {ok, Interval} = application:get_env(client, interval),
 
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
+    %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),
+    %% {ok, {ServerIp, ServerPort}} = inet:peername(Socket),
+    %% io:format("client ~w established connection <Server ~w:~w> <Client ~w:~w>~n",
+    %%           [self(), ServerIp, ServerPort, ClientIp, ClientPort]),
 
     % initialize periodic trigger
     FirstInterval = random:uniform(Interval),
