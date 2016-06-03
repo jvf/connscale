@@ -20,9 +20,11 @@ start() ->
 
 %% Start the client app
 start(normal, _Args) ->
+    % setup ets tables to count restarts
     _ = ets:new(counters, [public, named_table]),
     true = ets:insert_new(counters, {restarts, 0}),
-    {ok, Sup} = client_sup:start_link(),
+
+    {ok, Sup} = sup_sup:start_link(),
     {ok, Sup, []}.
 
 stop(_State) ->
