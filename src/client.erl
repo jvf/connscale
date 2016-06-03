@@ -48,7 +48,8 @@ handle_cast(connect, no_socket) ->
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
 
     % initialize periodic trigger
-    erlang:send_after(Interval, self(), trigger),
+    FirstInterval = random:uniform(Interval),
+    erlang:send_after(FirstInterval, self(), trigger),
 
     {noreply, Socket};
 
