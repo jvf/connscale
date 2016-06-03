@@ -14,6 +14,8 @@
 -export([start/2, stop/1]).
 
 start(normal, _Args) ->
+    _ = ets:new(counters, [public, named_table]),
+    true = ets:insert_new(counters, {restarts, 0}),
     {ok, Sup} = client_sup:start_link(),
     {ok, Sup, []}.
 
@@ -81,6 +83,8 @@ handle_info(trigger, Socket) ->
                     {stop, no_answer_from_server, Socket};
                 {error, Reason} ->
                     % other reasons, mainly tcp_closed
+                    _Res = ets:update_counter(counters, restarts, 1),
+                    %% io:format("Restarts: ~w~n", [_Res]),
                     {stop, Reason, Socket}
             end;
         {error, Reason} ->
