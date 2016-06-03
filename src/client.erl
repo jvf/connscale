@@ -30,7 +30,13 @@ start_link() ->
 
 init(_Args) ->
     process_flag(trap_exit, true),
+    gen_server:cast(self(), connect),
+    {ok, no_socket}.
 
+handle_call(get_socket, _From, Socket) ->
+    {reply, Socket, Socket}.
+
+handle_cast(connect, no_socket) ->
     % use crypto to seed random
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}),
@@ -38,15 +44,13 @@ init(_Args) ->
     {ok, Server} = application:get_env(client, server),
     {ok, Port} = application:get_env(client, listen_port),
     {ok, Interval} = application:get_env(client, interval),
+
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
 
     % initialize periodic trigger
     erlang:send_after(Interval, self(), trigger),
 
-    {ok, Socket}.
-
-handle_call(get_socket, _From, Socket) ->
-    {reply, Socket, Socket}.
+    {noreply, Socket};
 
 handle_cast(_Request, State) ->
     {noreply, State}.
