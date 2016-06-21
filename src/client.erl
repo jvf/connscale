@@ -75,6 +75,7 @@ handle_info({tcp, _OtherSocket, _Msg}, Socket) ->
 handle_info(trigger, Socket) ->
     %% io:format("~w was triggered~n", [self()]),
     {ok, Timeout} = application:get_env(client, timeout),
+    {ok, {_Address, Port}} = inet:sockname(Socket),
     case gen_tcp:send(Socket, "Ping") of
         ok ->
             case gen_tcp:recv(Socket, 0, Timeout) of
@@ -87,6 +88,7 @@ handle_info(trigger, Socket) ->
                     {stop, no_answer_from_server, Socket};
                 {error, Reason} ->
                     % other reasons, mainly tcp_closed
+                    io:format("~w terminating in gen_tcp:recv/2 due to ~w (Port: ~w)~n", [self(), Reason, Port]),
                     {stop, Reason, Socket}
             end;
         {error, Reason} ->
@@ -101,6 +103,8 @@ handle_info(Info, State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
+terminate(Reason, no_socket) ->
+    io:format("client conn ~w terminated with no socket due to reason: ~p~n ", [self(), Reason]);
 terminate(Reason, Socket) ->
     io:format("client conn ~w terminated due to reason: ~p~n", [self(), Reason]),
     ok = gen_tcp:close(Socket).
