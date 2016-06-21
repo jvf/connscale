@@ -65,7 +65,47 @@ More sources on the topic:
 
 Add the option `{reuseaddr, true} ` when opening the listen socket. This only works if the listen socket is bound to the wildcard 0.0.0.0 IP (which is the default for gen_tcp).
 
+## Test on two 2 GB RAM Digital Ocean instances
+
+### Setup
+
+Two Digital Ocean instances with 2 GB RAM / 2 CPU's and SSDs for storage with Ubuntu 14.04.4 x64 as OS.
+
+### Tests
+
+After increasing the limit on file descriptors, we beginn starting tcp connections. One might need to increase the timeout at the client. We used a value of 5 seconds (i.e. if a client does not receive an answer within 5 seconds an `no_answer_from_server` error is thrown.)
+
+Starting large numbers of connections gets pretty slow (like > 1h for 28 000 connections slow). This raises the question what the bottleneck of the setup is. CPU and RAM are always candidates, but so far ()~24 000 connections) this does not seem to be the problem. Network traffic is around 3.2 MBit/sec (In) / 5.2 Mbit/sec (Out) on the client (around 24 000). On the server, it is around 5.3 MBit/sec (In) / 3.5 Mbit/sec out. PPS on the server is around 10 K (In) / 6 K (Out), on the client it is the outher way around. My suspicion is, that the PPS is the bottleneck here.
+
+At 28233 connections we get `eaddrinuse` errors. This corresponds exactly to range of ephemeral ports:
+
+```
+server:~# cat  /proc/sys/net/ipv4/ip_local_port_range
+32768   61000
+
+```
+
+This means we successfully started and maintained the maximum number of TCP connections possible (using only one port at the server).
+
+The full error message from the client:
+```
+=ERROR REPORT==== 1-Jun-2016::11:05:44 ===
+Error in process <0.20073.0> with exit value:
+{{badmatch,{error,{{badmatch,{error,eaddrinuse}},
+                   [{client,init,1,[{file,"src/client.erl"},{line,41}]},
+                    {gen_server,init_it,6,
+                                [{file,"gen_server.erl"},{line,328}]},
+                    {proc_lib,init_p_do_apply,3,
+                              [{file,"proc_lib.erl"},{line,240}]}]}}},
+ [{client_sup,do_start_clients,2,[{file,"src/client_sup.erl"},{line,30}]}]}
+ ```
+
+
+
+ TODO
+ - [ ] try to increase interval, as the network is already pretty heavy utilized at 28 000 connections (without starting new connections)
+
 # TODO
-- [ ] make `INTERVAL` configurable
-- [ ] make client timeout configurable
+- [x] make `INTERVAL` configurable
+- [x] make client timeout configurable
 - [ ] collect connection statistics
