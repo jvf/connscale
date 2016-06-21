@@ -93,7 +93,7 @@ handle_info(trigger, Socket) ->
             end;
         {error, Reason} ->
             io:format("~w terminating in gen_tcp:send/2 due to ~w~n", [self(), Reason]),
-            {stop, normal, Socket}
+            {stop, Reason, Socket}
     end;
 
 handle_info(Info, State) ->
