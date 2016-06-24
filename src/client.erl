@@ -84,16 +84,19 @@ handle_info(trigger, Socket) ->
                     erlang:send_after(Interval, self(), trigger),
                     {noreply, Socket};
                 {error, timeout} ->
-                    % timeout from gen_tcp:recv/3
-                    {stop, no_answer_from_server, Socket};
+                    Reason = {shutdown, {timeout, 'gen_tcp:recv/3'}},
+                    {stop, Reason, Socket};
                 {error, Reason} ->
-                    % other reasons, mainly tcp_closed
-                    io:format("~w terminating in gen_tcp:recv/2 due to ~w (Port: ~w)~n", [self(), Reason, Port]),
-                    {stop, Reason, Socket}
+                    % other reasons, mainly 'closed'
+                    %% io:format("~w terminating in gen_tcp:recv/2 due to ~w (Port: ~w)~n", [self(), Reason, Port]),
+                    TriggerCounter1 = erlang:get(trigger_counter),
+                    Reason1 = {shutdown, {Reason, 'gen_tcp:recv/3', TriggerCounter1}},
+                    {stop, Reason1, Socket}
             end;
         {error, Reason} ->
-            io:format("~w terminating in gen_tcp:send/2 due to ~w~n", [self(), Reason]),
-            {stop, Reason, Socket}
+            %% io:format("~w terminating in gen_tcp:send/2 due to ~w~n", [self(), Reason]),
+            Reason1 = {shutdown, {Reason, 'gen_tcp:send/3'}},
+            {stop, Reason1, Socket}
     end;
 
 handle_info(Info, State) ->
@@ -104,8 +107,8 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 terminate(Reason, no_socket) ->
-    io:format("client conn ~w terminated with no socket due to reason: ~p~n ", [self(), Reason]);
+    io:format("client ~w terminated with no socket with: ~180.4p~n ", [self(), Reason]);
 terminate(Reason, Socket) ->
-    io:format("client conn ~w terminated due to reason: ~p~n", [self(), Reason]),
+    io:format("client ~w terminated with: ~192.4p~n", [self(), Reason]),
     ok = gen_tcp:close(Socket).
 
