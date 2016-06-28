@@ -1,6 +1,6 @@
 # Connscale
 
-A little Erlang application to test how well the number of TCP connections scales on a given hardware using `gen_tcp`. The app consists of a main (server) component (`connscale`, `server` and `server_sup`) and a client component (`client`, `client_sup`).
+A little Erlang application to test how well the number of TCP connections scales on a given hardware using `gen_tcp`. This package  consists of two applications, the server (`server` and `server_sup`) and a client (`client`, `client_sup`).
 
 ## Server
 
@@ -8,19 +8,44 @@ The server component opens a listen socket and a number of concurrent acceptors,
 
 ## Client
 
-The client component consists of a supervisor through which we start client connections. Each connection is managed by its own process, implemented as a `gen_server`. Once a connection is started the process sends a "Ping" message every `INTERVAL` seconds and waiting for a "Pong" reply in passive mode. If no pong message is received with 1 second, the process is terminated with a `no_answer_from_server` error.
+The client component consists of a supervisor through which we start client connections. Each connection is managed by its own process, implemented as a `gen_server`. Once a connection is started the process sends a "Ping" message every `interval` seconds and waiting for a "Pong" reply in passive mode. If no pong message is received with `timeout` microsecond, the process is terminated with a `timeout` error.
 
 # How to use
 
-## Prerequisites
+Compile with `erl -make`. Start the server with
 
-* The application assumes, that the whole application (source code, binaries, app files etc) is available at all nodes, e.g. through NFS or rsync.
-* passwordless ssh access to remote nodes
-* Erlang needs to be installed on all nodes
+```
+erl -pa ebin -s server -config connscale.config
+```
+
+and the client app with 
+
+```
+erl -pa ebin -s client.
+```
+
+Start 10 connections from the console of the client with
+
+```
+client_sup:start_clients(1).
+```
 
 ## Configuration
 
 Configuration parameters like the server IP address, the listening port, the client hostnames etc need to be added either to the `connscale.app` file (in `ebin`) or (preferably) through a configuration file, see the	`example.config`.
+
+
+# Remote Client
+
+An (experimental) remote client (`rclient`) is also available, which uses Erlang's `slave` module and to start a remote node and the  client application on that node.
+
+## Prerequisites
+
+* This setup assumes, that the whole application (source code, binaries, app files etc) is available at all nodes, e.g. through NFS or rsync.
+* passwordless ssh access to remote nodes
+* Erlang needs to be installed on all nodes
+
+
 
 ## Usage
 
@@ -33,7 +58,7 @@ From the console, start a client application on a remote node with
 ```
 Client1 = connscale:client_start(client1).
 ```
-`client1` needs to a key in the configuration of the `connscale` application (the `env` part in the `.app` file), indicating the hostname of the remote node designated to run the client. This starts a remote node using the Erlang `slave` module and starts the client application on that node. Multiple client applications can be started if more hosts are available.
+`client1` needs to a key in the configuration of the `connscale` application (the `env` part in the `.app` file), indicating the hostname of the remote node designated to run the client. This starts a remote node using the Erlang's `slave` module and starts the client application on that node. Multiple client applications can be started if more hosts are available.
 
 We can now start client connections with `connscale:connections_start(10, Client1).` (this starts 10 client connetions).
 
@@ -110,23 +135,7 @@ On BSD derived system (including Mac OS X) the queue for incoming connections wo
 
 ## How to fix it
 
-Increase the size of the accept queue with the `{backlog, N}` option to `gen_tcp:listen/2`.
-
-Testing: Setting
-
-tcp_max_syn_backlog: was 512
-
-tcp_abort_on_overflow: was 0
-
-bmon
-
-nload
-
-echo 2048 | sudo tee /proc/sys/net/ipv4/tcp_max_syn_backlog
-
-When increasing the backlog, it is also useful/necessary to increase the number of acceptors, so that the accept gets consumed fast enough.
-
-
+Increase the size of the accept queue with the `{backlog, N}` option to `gen_tcp:listen/2`. Also of interest might be the `tcp_max_syn_backlog` kernel parameter (defaults to 512 on Ubuntu 14.04). The `tcp_abort_on_overflow` kernel parameter can be used to force the resetting of the connection if the accept queue overflows, which I used  to confirm, that the problem described above is indeed due to overflows in the connect queue.
 
 The `close` error only occurs in the call to `gen_tcp:recv/3`, not `gen_tcp:send/2`. To determine if this is due to timing issues or due to some special semantics I introduced a delay of 240 seconds (the delay through `ACK-SYN` retries can be up to 180 seconds with default value of 5 retries) between the `gen_tcp:connect/3` and the calls to `gen_tcp:send/2`. Still, the calls to `gen_tcp:send/2` all succeed, which indicates `gen_tcp:send/2` does not recognize that the connection was closed by the server.
 
@@ -143,7 +152,7 @@ This variable takes an integer value, but should under no circumstances be large
 
 ### Setup
 
-Two Digital Ocean instances with 2 GB RAM / 2 CPU's and SSDs for storage with Ubuntu 14.04.4 x64 as OS.
+Two Digital Ocean instances with 2 GB RAM / 2 CPU's and SSDs for storage with Ubuntu 14.04.4 x64 as OS. `bmon` and `nload` where used to monitor the network traffic.
 
 ### Tests
 
