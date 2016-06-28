@@ -1,6 +1,6 @@
-{application, connscale,
+{application, server,
  [{vsn, "1.0.0"},
-  {modules, [connscale, server, server_sup, rclient]},
+  {modules, [server, server_sup, rclient]},
   {registered, []},
   {env, [   % see example.config
          {listen_port, 8989},
@@ -12,5 +12,5 @@
          {ebin_dir, "/path/to/ebin/dir"}
         ]
   },
-  {mod, {connscale, []}}
+  {mod, {server, []}}
  ]}.

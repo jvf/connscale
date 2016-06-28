@@ -1,12 +1,57 @@
 -module(server).
 -behaviour(gen_server).
 
+% application behaviour
+-export([start/2, stop/1]).
+
+% -run/-s adapter
+-export([start/0]).
+
+% gen_server api
 -export([start_link/1]).
+
+% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3,
          terminate/2]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Application Callbacks %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Start the connscale app. Opens a listen port at the port defined in the env
+%% and opens Acceptors number of concurrent acceptors.
+start(normal, _Args) ->
+    {ok, Port} = application:get_env(listen_port),
+    {ok, Acceptors} = application:get_env(acceptors),
+    {ok, Backlog} = application:get_env(backlog),
+    io:format("listening on port ~w with backlog of ~w~n", [Port, Backlog]),
+    {ok, ListenSocket} = gen_tcp:listen(Port, [{active,once}, {reuseaddr, true}, {backlog, Backlog}]),
+    {ok, Sup} = server_sup:start_link(ListenSocket),
+    _ = [ supervisor:start_child(Sup, []) || _ <- lists:seq(1,Acceptors)],
+    {ok, Sup, ListenSocket}.
+
+%% Stop the connscale app (closes the listen socket)
+stop(ListenSocket) ->
+    ok = gen_tcp:close(ListenSocket),
+    ok.
+
+%% to use with erl -run/-s
+start() ->
+    io:format("starting ~w application~n", [?MODULE]),
+    application:start(?MODULE).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% gen_server api %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
 start_link(Socket) ->
     gen_server:start_link(?MODULE, Socket, []).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% gen_server callbacks %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 init(Socket) ->
     process_flag(trap_exit, true),
