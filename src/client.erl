@@ -51,6 +51,7 @@ handle_cast(connect, no_socket) ->
     {ok, Port} = application:get_env(client, listen_port),
     {ok, Interval} = application:get_env(client, interval),
 
+    io:format("Server: ~w. Port: ~w~n", [Server, Port]),
     timer:sleep(random:uniform(10000)),
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
     %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),

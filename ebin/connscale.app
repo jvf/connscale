@@ -1,6 +1,6 @@
 {application, connscale,
  [{vsn, "1.0.0"},
-  {modules, [connscale, server, server_sup]},
+  {modules, [connscale, server, server_sup, rclient]},
   {registered, []},
   {env, [   % see example.config
          {listen_port, 8989},
