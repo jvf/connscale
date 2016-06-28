@@ -112,6 +112,32 @@ On BSD derived system (including Mac OS X) the queue for incoming connections wo
 
 Increase the size of the accept queue with the `{backlog, N}` option to `gen_tcp:listen/2`.
 
+Testing: Setting
+
+tcp_max_syn_backlog: was 512
+
+tcp_abort_on_overflow: was 0
+
+bmon
+
+nload
+
+echo 2048 | sudo tee /proc/sys/net/ipv4/tcp_max_syn_backlog
+
+When increasing the backlog, it is also useful/necessary to increase the number of acceptors, so that the accept gets consumed fast enough.
+
+
+
+The `close` error only occurs in the call to `gen_tcp:recv/3`, not `gen_tcp:send/2`. To determine if this is due to timing issues or due to some special semantics I introduced a delay of 240 seconds (the delay through `ACK-SYN` retries can be up to 180 seconds with default value of 5 retries) between the `gen_tcp:connect/3` and the calls to `gen_tcp:send/2`. Still, the calls to `gen_tcp:send/2` all succeed, which indicates `gen_tcp:send/2` does not recognize that the connection was closed by the server.
+
+However, only calling `gen_tcp:recv/3` (without a prior `gen_tcp:send/2`) does not see any closed connection either. Tested by `gen_tcp:recv/3` with a timeout of 240 seconds. Why do I not receive a `RST` package here?!  
+
+
+#### tcp_synack_retries
+
+The tcp_synack_retries setting tells the kernel how many times to retransmit the SYN,ACK reply to an SYN request. In other words, this tells the system how many times to try to establish a passive TCP connection that was started by another host.
+
+This variable takes an integer value, but should under no circumstances be larger than 255 for the same reasons as for the tcp_syn_retries variable. Each retransmission will take aproximately 30-40 seconds. The default value of the tcp_synack_retries variable is 5, and hence the default timeout of passive TCP connections is aproximately 180 seconds.
 
 ## Test on two 2 GB RAM Digital Ocean instances
 
@@ -148,7 +174,9 @@ Error in process <0.20073.0> with exit value:
  [{client_sup,do_start_clients,2,[{file,"src/client_sup.erl"},{line,30}]}]}
  ```
 
+### New Tests
 
+With 2-3 clients (one client seemed to be a bit wonky) I managed to establish up to ~ 75000 connections, with ~ 2 MiB/Sec In + 2 MiB/Sec Out and ~ 20-40K pps (in) + 20-40K pps (in). Server machine not yet fully exchausted hardware wise.
 
  TODO
  - [ ] try to increase interval, as the network is already pretty heavy utilized at 28 000 connections (without starting new connections)
