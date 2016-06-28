@@ -1,4 +1,4 @@
--module(serv_sup).
+-module(server_sup).
 -behaviour(supervisor).
 
 -export([start_link/1, start_acceptor/0]).
@@ -10,11 +10,11 @@ start_link(ListenSocket) ->
 init([ListenSocket]) ->
     {ok, {{simple_one_for_one, 60, 3600},
           [{socket,         % ChildId
-            {serv, start_link, [ListenSocket]}, % Start func, pass the socket
+            {server, start_link, [ListenSocket]}, % Start func, pass the socket
             temporary,      % Restart strategy
             1000,           % Shutdown timeout
             worker,         % Type
-            [serv]}   % Modules
+            [server]}   % Modules
           ]}}.
 
 start_acceptor() ->

@@ -1,9 +1,8 @@
 {application, connscale,
  [{vsn, "1.0.0"},
-  %% {modules, [connscale, serv, serv_sup, client, client_sup]},
-  {modules, [connscale, serv, serv_sup]},
+  {modules, [connscale, server, server_sup]},
   {registered, []},
-  {env, [
+  {env, [   % see example.config
          {listen_port, 8989},
          {acceptors, 20},
          {server, {127,0,0,1}},

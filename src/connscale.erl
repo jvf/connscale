@@ -23,7 +23,7 @@ start(normal, _Args) ->
     erlang:set_cookie(node(), Cookie),
     io:format("listening on port ~w with backlog of ~w~n", [Port, Backlog]),
     {ok, ListenSocket} = gen_tcp:listen(Port, [{active,once}, {reuseaddr, true}, {backlog, Backlog}]),
-    {ok, Sup} = serv_sup:start_link(ListenSocket),
+    {ok, Sup} = server_sup:start_link(ListenSocket),
     _ = [ supervisor:start_child(Sup, []) || _ <- lists:seq(1,Acceptors)],
     {ok, Sup, ListenSocket}.
 

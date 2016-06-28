@@ -1,4 +1,4 @@
--module(serv).
+-module(server).
 -behaviour(gen_server).
 
 -export([start_link/1]).
@@ -30,14 +30,13 @@ handle_cast(accept, ListenSocket) ->
             {ok, {ClientIp, ClientPort}} = inet:peername(AcceptSocket),
             io:format("serv ~w accepted connection <Server ~w:~w> <Client ~w:~w>~n",
                       [self(), ServerIp, ServerPort, ClientIp, ClientPort]),
-            serv_sup:start_acceptor(), % start a new acceptor
+            server_sup:start_acceptor(), % start a new acceptor
             {noreply, AcceptSocket};
         {error, closed} ->
             %% ListenSocket was closed
             {stop, normal, ListenSocket};
         {error, Reason} ->
             io:format("~w gen_tcp:accept caught an error: ~p~n", [self(), Reason]),
-            %% serv_sup:start_acceptor(), % start a new acceptor
             {stop, {error, Reason}, ListenSocket}
     end.
 

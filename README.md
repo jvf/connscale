@@ -1,10 +1,10 @@
 # Connscale
 
-A little Erlang application to test how well the number of TCP connections scales on a given hardware using `gen_tcp`. The app consists of a main (server) component (`connscale`, `serv` and `serv_sup`) and a client component (`client`, `client_sup`).
+A little Erlang application to test how well the number of TCP connections scales on a given hardware using `gen_tcp`. The app consists of a main (server) component (`connscale`, `server` and `server_sup`) and a client component (`client`, `client_sup`).
 
 ## Server
 
-The server component opens a listen socket and a number of concurrent acceptors, waiting for connection requests. If a clients connects, one of the acceptors takes over the connection, spawns a new acceptor and goes into `{active, once}` mode. Each acceptor/connection is managed by its own process, implemented as a `gen_server`. All the server processes are supervised by `serv_sup`. Each connection waits for "Ping" messages and responds with a "Pong".
+The server component opens a listen socket and a number of concurrent acceptors, waiting for connection requests. If a clients connects, one of the acceptors takes over the connection, spawns a new acceptor and goes into `{active, once}` mode. Each acceptor/connection is managed by its own process, implemented as a `gen_server`. All the server processes are supervised by `server_sup`. Each connection waits for "Ping" messages and responds with a "Pong".
 
 ## Client
 
