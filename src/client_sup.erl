@@ -27,7 +27,7 @@ start_clients(NoOfClients) ->
 do_start_clients(0, Acc) ->
     Acc;
 do_start_clients(NoOfClients, Acc) ->
-    {ok, ClientPid} = supervisor:start_child(?MODULE, []),
+    {ok, ClientPid} = supervisor:start_child(?MODULE, [NoOfClients]),
     do_start_clients(NoOfClients-1, [ClientPid|Acc]).
 
 

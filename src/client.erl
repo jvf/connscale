@@ -1,7 +1,7 @@
 -module(client).
 -behaviour(gen_server).
 
--export([start_link/0]).
+-export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3,
          terminate/2]).
 
@@ -31,19 +31,19 @@ stop(_State) ->
 %%% Client Connections (gen_server)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-start_link() ->
-    gen_server:start_link(?MODULE, [], []).
+start_link(DelayFanout) ->
+    gen_server:start_link(?MODULE, [DelayFanout], []).
 
-init(_Args) ->
+init([DelayFanout]) ->
     process_flag(trap_exit, true),
     gen_server:cast(self(), connect),
-    {ok, no_socket}.
+    {ok, DelayFanout}.
 
 handle_call(get_socket, _From, Socket) ->
     {reply, Socket, Socket}.
 
 % set up the connection
-handle_cast(connect, no_socket) ->
+handle_cast(connect, DelayFanout) ->
     % use crypto to seed random
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
     random:seed({A,B,C}),
@@ -52,9 +52,11 @@ handle_cast(connect, no_socket) ->
     {ok, Port} = application:get_env(client, listen_port),
     {ok, Interval} = application:get_env(client, interval),
 
-    %% io:format("Server: ~w. Port: ~w~n", [Server, Port]),
-    timer:sleep(random:uniform(10000)),
+    % spread the connect calls a little bit
+    timer:sleep(random:uniform(DelayFanout)),
+
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
+
     %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),
     %% {ok, {ServerIp, ServerPort}} = inet:peername(Socket),
     %% io:format("client ~w established connection <Server ~w:~w> <Client ~w:~w>~n",
@@ -108,7 +110,7 @@ handle_info(Info, State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-terminate(Reason, no_socket) ->
+terminate(Reason, undefined) ->
     io:format("client ~w terminated with no socket with: ~180.4p~n ", [self(), Reason]);
 terminate(Reason, Socket) ->
     io:format("client ~w terminated with: ~192.4p~n", [self(), Reason]),
