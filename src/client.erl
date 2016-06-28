@@ -90,8 +90,7 @@ handle_info(trigger, Socket) ->
                 {error, Reason} ->
                     % other reasons, mainly 'closed'
                     %% io:format("~w terminating in gen_tcp:recv/2 due to ~w (Port: ~w)~n", [self(), Reason, Port]),
-                    TriggerCounter1 = erlang:get(trigger_counter),
-                    Reason1 = {shutdown, {Reason, 'gen_tcp:recv/3', TriggerCounter1}},
+                    Reason1 = {shutdown, {Reason, 'gen_tcp:recv/3'}},
                     {stop, Reason1, Socket}
             end;
         {error, Reason} ->
