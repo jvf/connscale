@@ -23,6 +23,7 @@ start(normal, _Args) ->
     {ok, Sup} = client_sup:start_link(),
     {ok, Sup, []}.
 
+%% Stop the client app
 stop(_State) ->
     ok.
 
@@ -33,7 +34,6 @@ stop(_State) ->
 start_link() ->
     gen_server:start_link(?MODULE, [], []).
 
-
 init(_Args) ->
     process_flag(trap_exit, true),
     gen_server:cast(self(), connect),
@@ -42,6 +42,7 @@ init(_Args) ->
 handle_call(get_socket, _From, Socket) ->
     {reply, Socket, Socket}.
 
+% set up the connection
 handle_cast(connect, no_socket) ->
     % use crypto to seed random
     <<A:32, B:32, C:32>> = crypto:rand_bytes(12),
@@ -51,7 +52,7 @@ handle_cast(connect, no_socket) ->
     {ok, Port} = application:get_env(client, listen_port),
     {ok, Interval} = application:get_env(client, interval),
 
-    io:format("Server: ~w. Port: ~w~n", [Server, Port]),
+    %% io:format("Server: ~w. Port: ~w~n", [Server, Port]),
     timer:sleep(random:uniform(10000)),
     {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
     %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),
@@ -77,7 +78,7 @@ handle_info({tcp, _OtherSocket, _Msg}, Socket) ->
 handle_info(trigger, Socket) ->
     %% io:format("~w was triggered~n", [self()]),
     {ok, Timeout} = application:get_env(client, timeout),
-    {ok, {_Address, Port}} = inet:sockname(Socket),
+    %% {ok, {_Address, _Port}} = inet:sockname(Socket),
     case gen_tcp:send(Socket, "Ping") of
         ok ->
             case gen_tcp:recv(Socket, 0, Timeout) of

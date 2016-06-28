@@ -8,20 +8,24 @@
 %%% Remote Client Interface %%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% needs to be started with -rsh ssh and a -name
+
+
 %% TODO: fix different escapings depending on the platform
 
 %% Starts a remote node and client application at the client host defined as
 %% ClientId in the env. ClientId must be a key in the env of the application
 %% indicating the hostname of machine to host the client.
 start(ClientId) ->
-    {ok, HostName} = application:get_env(connscale, ClientId),
-    {ok, Cookie} = application:get_env(connscale, cookie),
-    {ok, EbinDir} = application:get_env(connscale, ebin_dir),
-    {ok, ListenPort} = application:get_env(connscale, listen_port),
-    {ok, Server} = application:get_env(connscale, server),
-    %% ClientEnv = io_lib:format("-client listen_port ~w server \"'~w'\"", % this escaping works on Linux
-    %%                          [ListenPort, Server]),
-    ClientEnv = io_lib:format("-client listen_port ~w server '~w'", % this escaping works on Mac OS X
+    {ok, Cookie} = application:get_env(server, cookie),
+    erlang:set_cookie(node(), Cookie),
+    {ok, HostName} = application:get_env(server, ClientId),
+    {ok, Cookie} = application:get_env(server, cookie),
+    {ok, EbinDir} = application:get_env(server, ebin_dir),
+    {ok, ListenPort} = application:get_env(server, listen_port),
+    {ok, Server} = application:get_env(server, server),
+    % alternative escaping: \"'~w'\"
+    ClientEnv = io_lib:format("-client listen_port ~w server '~w'",
                              [ListenPort, Server]),
     Args = io_lib:format("-setcookie ~s -pa ~s ~s", [Cookie, EbinDir, ClientEnv]),
     {ok, ClientName} = slave:start(HostName, client, Args),

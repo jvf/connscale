@@ -14,7 +14,7 @@ init([ListenSocket]) ->
             temporary,      % Restart strategy
             1000,           % Shutdown timeout
             worker,         % Type
-            [server]}   % Modules
+            [server]}       % Modules
           ]}}.
 
 start_acceptor() ->
