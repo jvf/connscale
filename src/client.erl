@@ -55,18 +55,22 @@ handle_cast(connect, DelayFanout) ->
     % spread the connect calls a little bit
     timer:sleep(random:uniform(DelayFanout)),
 
-    {ok, Socket} = gen_tcp:connect(Server, Port, [{active, false}]),
+    case gen_tcp:connect(Server, Port, [{active, false}]) of
+        {ok, Socket} ->
+            %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),
+            %% {ok, {ServerIp, ServerPort}} = inet:peername(Socket),
+            %% io:format("client ~w established connection <Server ~w:~w> <Client ~w:~w>~n",
+            %%           [self(), ServerIp, ServerPort, ClientIp, ClientPort]),
 
-    %% {ok, {ClientIp, ClientPort}} = inet:sockname(Socket),
-    %% {ok, {ServerIp, ServerPort}} = inet:peername(Socket),
-    %% io:format("client ~w established connection <Server ~w:~w> <Client ~w:~w>~n",
-    %%           [self(), ServerIp, ServerPort, ClientIp, ClientPort]),
+            % initialize periodic trigger
+            FirstInterval = random:uniform(Interval),
+            erlang:send_after(FirstInterval, self(), trigger),
 
-    % initialize periodic trigger
-    FirstInterval = random:uniform(Interval),
-    erlang:send_after(FirstInterval, self(), trigger),
-
-    {noreply, Socket};
+            {noreply, Socket};
+        {error, Reason} ->
+            Reason1 = {shutdown, {Reason, 'gen_tcp:connect/3'}},
+            {stop, Reason1, undefined}
+    end;
 
 handle_cast(_Request, State) ->
     {noreply, State}.
