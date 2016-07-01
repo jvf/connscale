@@ -5,7 +5,7 @@
 -export([start/0, start/2, stop/1]).
 
 %% Client API
--export([connections_start/1, connections_stop/1]).
+-export([connections_start/1, connections_stop/1, count_connections/0]).
 
 %% Client gen_server
 -export([start_link/1]).
@@ -58,6 +58,10 @@ do_stop_connections(_, []) ->
 do_stop_connections(NoOfConnections, [C|Children]) ->
     ok = supervisor:terminate_child(client_sup, C),
     do_stop_connections(NoOfConnections-1, Children).
+
+count_connections() ->
+    [_, _, _, {workers, Count}] = supervisor:count_children(client_sup),
+    Count.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
