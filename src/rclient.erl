@@ -44,7 +44,7 @@ connections_start(NoOfConnections, Client) ->
 do_start_connections(0, _Client, Acc) ->
     Acc;
 do_start_connections(NoOfConnections, Client, Acc) ->
-    {ok, Pid} = supervisor:start_child({client_sup, Client}, []),
+    {ok, Pid} = supervisor:start_child({client_sup, Client}, [NoOfConnections]),
     do_start_connections(NoOfConnections-1, Client, [Pid|Acc]).
 
 %% Stops a given number connections by terminating the respective process
