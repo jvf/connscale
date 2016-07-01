@@ -1,6 +1,13 @@
 -module(client).
 -behaviour(gen_server).
 
+%% Client Application
+-export([start/0, start/2, stop/1]).
+
+%% Client API
+-export([connections_start/1, connections_stop/1]).
+
+%% Client gen_server
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3,
          terminate/2]).
@@ -9,9 +16,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Client application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
--export([start/0, start/2, stop/1]).
 
 %% Adaptor to start the app with erl -run/-s
 start() ->
@@ -26,6 +30,35 @@ start(normal, _Args) ->
 %% Stop the client app
 stop(_State) ->
     ok.
+
+
+%%%%%%%%%%%%%%%%%%
+%%% Client API %%%
+%%%%%%%%%%%%%%%%%%
+
+connections_start(NoOfConnections) ->
+    do_start_connections(NoOfConnections, []).
+
+do_start_connections(0, Acc) ->
+    Acc;
+do_start_connections(NoOfConnections, Acc) ->
+    {ok, ClientPid} = supervisor:start_child(client_sup, [NoOfConnections]),
+    do_start_connections(NoOfConnections-1, [ClientPid|Acc]).
+
+%% Stop the given number of connections
+connections_stop(NoOfConnections) ->
+    ChildDetails = supervisor:which_children(client_sup),
+    Children = lists:map(fun({_Id, Pid, _Type, _Module}) -> Pid end, ChildDetails),
+    do_stop_connections(NoOfConnections, Children).
+
+do_stop_connections(0, _) ->
+    ok;
+do_stop_connections(_, []) ->
+    io:format("less children than requested to stop");
+do_stop_connections(NoOfConnections, [C|Children]) ->
+    ok = supervisor:terminate_child(client_sup, C),
+    do_stop_connections(NoOfConnections-1, Children).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Client Connections (gen_server)
