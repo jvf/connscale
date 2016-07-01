@@ -8,7 +8,7 @@
 -export([start/0]).
 
 % gen_server api
--export([start_link/1]).
+-export([start_link/1, count_connections/0]).
 
 % gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, code_change/3,
@@ -41,12 +41,17 @@ start() ->
     application:start(?MODULE).
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% gen_server api %%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%
+%%% API %%%%%%
+%%%%%%%%%%%%%%
 
 start_link(Socket) ->
     gen_server:start_link(?MODULE, Socket, []).
+
+count_connections() ->
+    [_, _, _, {workers, Count}] = supervisor:count_children(server_sup),
+    {ok, Acceptors} = application:get_env(server, acceptors),
+    Count - Acceptors.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
