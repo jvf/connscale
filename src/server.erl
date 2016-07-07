@@ -74,6 +74,7 @@ handle_call(_E, _From, State) ->
 %% this constitutes the acceptor
 %% blocks until an connection is established (i.e. might need a brutal_kill)
 handle_cast(accept, ListenSocket) ->
+    io:format("~w starting acceptor~n", [self()]),
     case gen_tcp:accept(ListenSocket) of
         {ok, AcceptSocket} ->
             {ok, {ServerIp, ServerPort}} = inet:sockname(AcceptSocket),
@@ -82,12 +83,14 @@ handle_cast(accept, ListenSocket) ->
                       [self(), ServerIp, ServerPort, ClientIp, ClientPort]),
             server_sup:start_acceptor(), % start a new acceptor
             {noreply, AcceptSocket};
-        {error, closed} ->
-            %% ListenSocket was closed
-            {stop, normal, ListenSocket};
+        %% {error, closed} ->
+        %%     io:format("~w gen_tcp:accept caught an error: ~w~n", [self(), closed]),
+        %%     %% ListenSocket was closed
+        %%     {stop, normal, ListenSocket};
         {error, Reason} ->
-            io:format("~w gen_tcp:accept caught an error: ~p~n", [self(), Reason]),
-            {stop, {error, Reason}, ListenSocket}
+            Reason1 = {shutdown, {Reason, 'gen_tcp:accept/1'}},
+            %% io:format("~w gen_tcp:accept caught an error: ~w~n", [self(), Reason]),
+            {stop, Reason1, ListenSocket}
     end.
 
 handle_info({tcp, _Socket, "Ping"}, Socket) ->
