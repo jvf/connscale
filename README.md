@@ -233,7 +233,32 @@ With the hardware available for testing the final limit was the hardware. Even w
 
 This tool was written to test if the number of connections maintained by Scalaris are or can become a bottleneck for scalability. A second objective was to test how the errors from the OS are propagated through the Erlang VM to `gen_tcp`.
 
+The number of point-to-point TCP connections (connections per node) in Scalaris grows approximately with f(x) = 3x + 15 where x is the size of the Scalaris ring. If we assume a typical default value of 1024 file descriptors we would expect to be able to start around 336 nodes before getting into problems. On cumulus, the number of file descriptors is set to 4096, which limits the Scalaris size to ~1360 nodes.
 
+When reaching the file limit with a `gen_tcp/connect` call, errors of the form
+```
+log:log(info,"[ CC ~p (~p) ] couldn't connect (~.0p)",
+                    [self(), pid_groups:my_pidname(), emfile])
+```
+are logged. When reaching the limit in a `gen_tcp:accept` call, an error of the form
+
+```
+** exception error: no case clause matching "{error, emfile}"
+```
+
+or
+
+```
+** exception error: no case clause matching "{error, closed}"
+```
+
+is expected.
+
+To circumvent the problem we can increase the file descriptor limit. This only prevents errors of course, large number of connections still put (considerable) load on the hardware. In Scalaris we can reduce the routing base to keep the number of connections lower.
+
+Around 9406 Scalaris we run into the second limit (assuming default settings for the number of dynamically assignable ports), which manifests through `eaddrinuse` errors. To circumvent this problem the port range can be increased through `/proc/sys/net/ipv4/ip_local_port_range`. Alternatively (and to get even larger numbers of connections) multiple listen ports or multiple IP addresses per node would be needed. However, the resource consumption will be very severe at this point, so I don't think this is a practical solution. 
+
+Note: Errors in `gen_tcp` occur as error return codes of the form `{error, Reason}`, not runtime errors.
 
 # Experiments
 
